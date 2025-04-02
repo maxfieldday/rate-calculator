@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Rate Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 25px;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo img {
+            max-width: 150px;
+            height: auto;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) inset;
+        }
+        .result-card {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            background-color: #f1f9ff;
+            border-left: 4px solid #3498db;
+            display: none;
+        }
+        .result-card h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 20px;
+            border-bottom: 1px solid #e3f2fd;
+            padding-bottom: 10px;
+        }
+        .rate {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .rate-details {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        .daily-rate {
+            margin-top: 10px;
+            font-size: 18px;
+            color: #555;
+        }
+        .notification {
+            font-style: italic;
+            color: #7f8c8d;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            width: 100%;
+            transition: background-color 0.2s;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #95a5a6;
+        }
+        .category-label {
+            background-color: #e3f2fd;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+        .admin-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        .admin-link a {
+            color: #95a5a6;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <!-- Replace with your company logo -->
+            <div style="background-color: #3498db; color: white; width: 150px; height: 50px; line-height: 50px; margin: 0 auto; border-radius: 6px; font-weight: bold;">YOUR LOGO</div>
+        </div>
+        
+        <h1>Employee Rate Calculator</h1>
+        
+        <div class="form-group">
+            <label for="employee">Select Employee:</label>
+            <select id="employee">
+                <option value="">-- Please select an employee --</option>
+                <!-- This will be populated from Firestore -->
+            </select>
+        </div>
+        
+        <button id="lookupBtn" class="btn">Calculate Rate</button>
+        
+        <div id="result" class="result-card">
+            <h2 id="employee-name">Employee Rate</h2>
+            <div id="employee-category" class="category-label">Category</div>
+            
+            <p>Current hourly rate:</p>
+            <div id="hourly-rate" class="rate">£0.00</div>
+            
+            <div class="rate-details">
+                <div id="daily-rate" class="daily-rate">Daily rate (8 hours): £0.00</div>
+            </div>
+        </div>
+        
+        <p class="notification">Rates are calculated based on salary, benefits, overhead and current company factors.</p>
+        
+        <div class="admin-link">
+            <a href="admin.html">Admin Portal</a>
+        </div>
+    </div>
+    
+    <footer>
+        &copy; 2025 Your Company Name. All rights reserved.
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDzVaiMVi0SFymT-WTikw6VSW48HmhB3Jc",
+            authDomain: "rate-calculator-7ff27.firebaseapp.com",
+            projectId: "rate-calculator-7ff27",
+            storageBucket: "rate-calculator-7ff27.firebasestorage.app",
+            messagingSenderId: "881125108894",
+            appId: "1:881125108894:web:354b6dcc0b167d3b8d1f8f"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Initialize default data if first time running
+        document.addEventListener('DOMContentLoaded', async function() {
+            await initializeDefaultData();
+            
+            // Populate employees dropdown
+            await populateEmployeeDropdown();
+            
+            // Set up event listener for the lookup button
+            document.getElementById('lookupBtn').addEventListener('click', lookupRate);
+        });
+        
+        // Initialize default data in Firestore if not present
+        async function initializeDefaultData() {
+            try {
+                // Check if business parameters already exist
+                const businessParamsDoc = await getDoc(doc(db, 'businessParameters', 'params'));
+                
+                if (!businessParamsDoc.exists()) {
+                    // Set default business parameters
+                    const defaultParams = {
+                        totalAgencyCosts: 500000,
+                        totalChargeableSalaries: 420000,
+                        oncostPercentage: 20,
+                        oncosts: 84000,
+                        overheadRecoveryFactor: 1,
+                        markupPercentage: 55,
+                        billableHours: 1566,
+                        totalOverhead: 360000
+                    };
+                    await setDoc(doc(db, 'businessParameters', 'params'), defaultParams);
+                    console.log("Default business parameters created");
+                }
+                
+                // Check if employees already exist
+                const employeesSnapshot = await getDocs(collection(db, 'employees'));
+                
+                if (employeesSnapshot.empty) {
+                    // Set default employees
+                    const defaultEmployees = [
+                        { id: "1", name: "John Smith", category: "Editor", salary: 32000, oncostPercentage: 20, billableHours: 1566 },
+                        { id: "2", name: "Sarah Adams", category: "Editor", salary: 36000, oncostPercentage: 20, billableHours: 1566 },
+                        { id: "3", name: "Michael Chen", category: "Designer", salary: 30000, oncostPercentage: 20, billableHours: 1566 },
+                        { id: "4", name: "Emily Rodriguez", category: "Designer", salary: 34000, oncostPercentage: 20, billableHours: 1566 },
+                        { id: "5", name: "David Wilson", category: "Camera Operator", salary: 28000, oncostPercentage: 20, billableHours: 1566 },
+                        { id: "6", name: "Lisa Johnson", category: "Producer", salary: 42000, oncostPercentage: 20, billableHours: 1566 }
+                    ];
+                    
+                    // Add each employee to Firestore
+                    for (const employee of defaultEmployees) {
+                        await setDoc(doc(db, 'employees', employee.id), employee);
+                    }
+                    console.log("Default employees created");
+                }
+                
+                // Check if categories already exist
+                const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+                
+                if (categoriesSnapshot.empty) {
+                    // Set default categories
+                    const defaultCategories = [
+                        { id: "1", name: "Editor", defaultBillableHours: 1566 },
+                        { id: "2", name: "Designer", defaultBillableHours: 1566 },
+                        { id: "3", name: "Camera Operator", defaultBillableHours: 1566 },
+                        { id: "4", name: "Producer", defaultBillableHours: 1566 }
+                    ];
+                    
+                    // Add each category to Firestore
+                    for (const category of defaultCategories) {
+                        await setDoc(doc(db, 'categories', category.id), category);
+                    }
+                    console.log("Default categories created");
+                }
+            } catch (error) {
+                console.error("Error initializing data:", error);
+            }
+        }
+        
+        // Populate the employee dropdown from Firestore
+        async function populateEmployeeDropdown() {
+            try {
+                const select = document.getElementById('employee');
+                
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // Get all employees from Firestore
+                const employeesSnapshot = await getDocs(collection(db, 'employees'));
+                const employees = [];
+                employeesSnapshot.forEach(doc => {
+                    employees.push(doc.data());
+                });
+                
+                // Group employees by category
+                const categorizedEmployees = {};
+                employees.forEach(emp => {
+                    if (!categorizedEmployees[emp.category]) {
+                        categorizedEmployees[emp.category] = [];
+                    }
+                    categorizedEmployees[emp.category].push(emp);
+                });
+                
+                // Add employees to select grouped by category
+                Object.keys(categorizedEmployees).sort().forEach(category => {
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = category;
+                    
+                    categorizedEmployees[category].forEach(emp => {
+                        const option = document.createElement('option');
+                        option.value = emp.id;
+                        option.textContent = emp.name;
+                        option.dataset.category = emp.category;
+                        optgroup.appendChild(option);
+                    });
+                    
+                    select.appendChild(optgroup);
+                });
+            } catch (error) {
+                console.error("Error populating employee dropdown:", error);
+            }
+        }
+        
+        // Function to calculate hourly rate for an employee
+        async function calculateEmployeeRate(employeeId) {
+            try {
+                // Get employee data from Firestore
+                const employeeDoc = await getDoc(doc(db, 'employees', employeeId));
+                
+                if (!employeeDoc.exists()) {
+                    return { success: false, message: 'Employee not found' };
+                }
+                
+                const employee = employeeDoc.data();
+                
+                // Get business parameters from Firestore
+                const paramsDoc = await getDoc(doc(db, 'businessParameters', 'params'));
+                const businessParams = paramsDoc.exists() ? paramsDoc.data() : {};
+                
+                // Use the formula from the spreadsheet
+                const oncostAmount = (employee.salary * employee.oncostPercentage) / 100;
+                const salaryPlusOncost = employee.salary + oncostAmount;
+                const individualOverhead = salaryPlusOncost * businessParams.overheadRecoveryFactor;
+                const total = salaryPlusOncost + individualOverhead;
+                const markup = total * (businessParams.markupPercentage / 100);
+                const amountToRecover = total + markup;
+                const hourlyRate = amountToRecover / employee.billableHours;
+                
+                return {
+                    success: true,
+                    employee: employee,
+                    hourlyRate: hourlyRate,
+                    dailyRate: hourlyRate * 8
+                };
+            } catch (error) {
+                console.error("Error calculating employee rate:", error);
+                return { success: false, message: 'Error calculating rate' };
+            }
+        }
+        
+        // Handle lookup button click
+        async function lookupRate() {
+            const select = document.getElementById('employee');
+            const employeeId = select.value;
+            
+            if (!employeeId) {
+                alert('Please select an employee');
+                return;
+            }
+            
+            try {
+                const result = await calculateEmployeeRate(employeeId);
+                
+                if (!result.success) {
+                    alert(result.message);
+                    return;
+                }
+                
+                // Update the result card
+                document.getElementById('employee-name').textContent = result.employee.name;
+                document.getElementById('employee-category').textContent = result.employee.category;
+                document.getElementById('hourly-rate').textContent = `£${result.hourlyRate.toFixed(2)}`;
+                document.getElementById('daily-rate').textContent = `Daily rate (8 hours): £${result.dailyRate.toFixed(2)}`;
+                
+                // Show the result
+                document.getElementById('result').style.display = 'block';
+            } catch (error) {
+                console.error("Error looking up rate:", error);
+                alert("An error occurred while looking up the rate");
+            }
+        }
+    </script>
+</body>
+</html>
